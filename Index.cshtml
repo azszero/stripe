@@ -1,0 +1,151 @@
+﻿<html>
+<head>
+    <link href="https://cdn.azszero.com/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous">
+
+</head>
+
+<body>
+    <div id="ccname"></div>
+
+
+
+    <div id="wechat_pay" class=" allpaymentmethods text-center">
+        <div>
+            <i class="paymentlogo wechat-logo" style="cursor: auto;"></i>
+
+            <form id="wechat-payment-form">
+                <button id="paywechat" class="btn btn-secondary paybutton amounttopay">Pay wechat</button>
+            </form>
+        </div>
+    </div>
+
+
+
+
+    <div id="card" class="d-none allpaymentmethods">
+        <form id="card-payment-form">
+
+            <label class="cclabel">
+                <input id="ccname" name="ccname" class="field is-empty" placeholder="Name on Card" />
+                <span><span>@ViewBag.Name</span></span>
+            </label>
+
+            <label class="cclabel">
+                <div id="card-element" class="field is-empty"></div>
+                <span><span>Credit or debit card</span></span>
+            </label>
+            <button id="paycard" class="btn btn-secondary paybutton amounttopay">Pay</button>
+
+        </form>
+    </div>
+
+
+
+
+
+    <script src="https://cdn.azszero.com/js/jquery.min.js"></script>
+    <script src="https://cdn.azszero.com/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+
+
+
+    <script>
+
+        $(document).ready(function() {
+
+            activateStripe();
+
+            $("#paywechat").on("click", function() {
+
+                var finalAmount = 7;
+                var paymentType = "wechat_pay";
+
+                var data = {
+                    "name": $("#ccname").val(),
+                    "amount": finalAmount,
+                    "type": paymentType
+                }
+
+                $.ajax({
+                    url: '/Wechat/ProcessPaymentAmount',
+                    type: 'POST',
+                    data: data,
+
+                    success: function(result) {
+                        if (result.success) {
+                                                    console.log('ajax call success');
+
+                            var clientSecret = result.paymentIntentClientSecret;
+                            stripeWeChatPayment(clientSecret, "onSession", result.balance);
+
+                        }
+                        else {
+                                                                                console.log('ajax call fail');
+
+                        }
+                    }
+
+                });
+                event.preventDefault();
+            });
+        });
+
+
+        function stripeWeChatPayment(clientSecret, errloc, balance) {
+            stripe.confirmWechatPayPayment(
+                clientSecret,
+                {
+                    payment_method_options: {
+                        wechat_pay: {
+                            client: 'web',
+                        },
+                    }
+                },
+            ).then(function(result) {
+                if (result.error) {
+                    console.log(result.error);
+                } else {
+                    if (result.paymentIntent.status === 'succeeded') {
+                        console.log('succeeded');
+                    }
+                }
+                                                                    console.log(result);
+
+            });
+        }
+
+
+        function activateStripe() {
+            stripe = Stripe('pk_live_H3WggWv8vqUX0FhnPPwxg56B');
+            var elements = stripe.elements();
+            card = elements.create('card', {
+                iconStyle: 'solid',
+                style: {
+                    base: {
+                        iconColor: '#8898AA',
+                        color: '#31325F',
+                        lineHeight: '36px',
+                        fontWeight: 900,
+                        fontSize: '19px',
+
+                        '::placeholder': {
+                            color: 'lightgray',
+                        },
+                    },
+                    invalid: {
+                        iconColor: '#e85746',
+                        color: '#e85746',
+                    }
+                },
+                classes: {
+                    focus: 'is-focused',
+                    empty: 'is-empty',
+                },
+            });
+            card.mount("#card-element");
+        }
+
+    </script>
+
+</body>
+</html>
